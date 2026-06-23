@@ -1,8 +1,1 @@
-import { Module } from '@nestjs/common';
-
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [],
-})
-export class TestingModule {}
+// testing lib exports test helpers; no NestJS module needed

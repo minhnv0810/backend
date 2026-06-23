@@ -1,8 +1,2 @@
-import { Module } from '@nestjs/common';
-
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [],
-})
-export class ContractsModule {}
+// contracts is a pure leaf library — no NestJS dependencies.
+// All exports are in index.ts.

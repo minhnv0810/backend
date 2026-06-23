@@ -1,8 +1,20 @@
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
+import { RabbitPublisherService } from './rabbit-publisher.service';
+import { EVENT_PUBLISHER } from './interfaces/event-publisher.interface';
+import { MessagingOptions, MESSAGING_OPTIONS } from './messaging.options';
 
-@Module({
-  controllers: [],
-  providers: [],
-  exports: [],
-})
-export class MessagingModule {}
+@Module({})
+export class MessagingModule {
+  static forRoot(options: MessagingOptions): DynamicModule {
+    return {
+      module: MessagingModule,
+      providers: [
+        { provide: MESSAGING_OPTIONS, useValue: options },
+        RabbitPublisherService,
+        { provide: EVENT_PUBLISHER, useExisting: RabbitPublisherService },
+      ],
+      exports: [EVENT_PUBLISHER, RabbitPublisherService],
+      global: true,
+    };
+  }
+}
