@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/nx lint *)",
+      "Bash(./node_modules/.bin/nx run-many --target=lint *)",
+      "Bash(pnpm nx lint *)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose logs *)"
+    ]
+  }
+}
