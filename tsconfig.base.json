@@ -1,0 +1,38 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2021",
+    "module": "CommonJS",
+    "lib": ["ES2021"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@app/auth": ["libs/auth/src/index.ts"],
+      "@app/config": ["libs/config/src/index.ts"],
+      "@app/contracts": ["libs/contracts/src/index.ts"],
+      "@app/database": ["libs/database/src/index.ts"],
+      "@app/messaging": ["libs/messaging/src/index.ts"],
+      "@app/observability": ["libs/observability/src/index.ts"],
+      "@app/testing": ["libs/testing/src/index.ts"],
+      "auth": ["libs/auth/src/index.ts"],
+      "config": ["libs/config/src/index.ts"],
+      "contracts": ["libs/contracts/src/index.ts"],
+      "database": ["libs/database/src/index.ts"],
+      "messaging": ["libs/messaging/src/index.ts"],
+      "observability": ["libs/observability/src/index.ts"],
+      "testing": ["libs/testing/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
