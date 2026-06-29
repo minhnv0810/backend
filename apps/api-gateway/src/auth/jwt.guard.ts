@@ -13,8 +13,8 @@ export class GatewayJwtGuard extends JwtAuthGuard {
   canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<Request>();
 
-    // Health probes must always be reachable
-    if (req.path?.startsWith('/health')) return true;
+    // Health probes and Swagger UI must always be reachable
+    if (req.path?.startsWith('/health') || req.path?.startsWith('/docs')) return true;
 
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),

@@ -10,6 +10,26 @@ import { ProxyService } from './proxy.service';
 export class ProxyController {
   constructor(private readonly proxy: ProxyService) {}
 
+  // ─── Swagger spec proxies (must precede catch-all routes) ───────────
+
+  @Get('auth/api-json')
+  @Public()
+  authApiJson(@Req() req: Request, @Res() res: Response) {
+    return this.proxy.forward(req, res, 'auth', '/docs-json');
+  }
+
+  @Get('products/api-json')
+  @Public()
+  productsApiJson(@Req() req: Request, @Res() res: Response) {
+    return this.proxy.forward(req, res, 'product', '/docs-json');
+  }
+
+  @Get('orders/api-json')
+  @Public()
+  ordersApiJson(@Req() req: Request, @Res() res: Response) {
+    return this.proxy.forward(req, res, 'orders', '/docs-json');
+  }
+
   // ─── Auth service ───────────────────────────────────────────────────
 
   @Post('auth/register')

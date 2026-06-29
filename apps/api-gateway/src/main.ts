@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -19,9 +20,24 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
+  const placeholderDoc = SwaggerModule.createDocument(
+    app,
+    new DocumentBuilder().setTitle('API Gateway').setVersion('1.0').build(),
+  );
+  SwaggerModule.setup('docs', app, placeholderDoc, {
+    swaggerOptions: {
+      urls: [
+        { url: '/auth/api-json', name: 'Auth Service' },
+        { url: '/products/api-json', name: 'Product Service' },
+        { url: '/orders/api-json', name: 'Orders Service' },
+      ],
+    },
+  });
+
   const port = config.get<number>('PORT', 3000);
   await app.listen(port);
   Logger.log(`api-gateway running on http://localhost:${port}`);
+  Logger.log(`Swagger UI: http://localhost:${port}/docs`);
 }
 
 bootstrap();

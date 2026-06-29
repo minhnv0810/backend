@@ -23,9 +23,9 @@ export class ProxyService {
     };
   }
 
-  async forward(req: Request, res: Response, service: UpstreamService): Promise<void> {
+  async forward(req: Request, res: Response, service: UpstreamService, overridePath?: string): Promise<void> {
     const authedReq = req as AuthedRequest;
-    const targetUrl = `${this.serviceUrls[service]}${req.originalUrl}`;
+    const targetUrl = `${this.serviceUrls[service]}${overridePath ?? req.originalUrl}`;
     const correlationId = (req.headers[CORRELATION_ID_HEADER] as string) ?? '';
 
     const forwardHeaders: Record<string, string> = {};
