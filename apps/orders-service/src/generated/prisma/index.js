@@ -199,6 +199,10 @@ const config = {
       {
         "fromEnvVar": null,
         "value": "linux-musl-openssl-3.0.x"
+      },
+      {
+        "fromEnvVar": null,
+        "value": "linux-musl"
       }
     ],
     "previewFeatures": [],
@@ -206,7 +210,8 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null
+    "rootEnvPath": null,
+    "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
   "clientVersion": "5.22.0",
@@ -215,6 +220,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -223,8 +229,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/prisma\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Order {\n  id             String          @id @default(uuid())\n  userId         String          @map(\"user_id\")\n  status         String          @default(\"PENDING_PAYMENT\")\n  totalAmount    Decimal         @map(\"total_amount\") @db.Decimal(12, 2)\n  currency       String          @default(\"USD\")\n  createdAt      DateTime        @default(now()) @map(\"created_at\")\n  updatedAt      DateTime        @updatedAt @map(\"updated_at\")\n  items          OrderItem[]\n  idempotencyKey IdempotencyKey?\n\n  @@index([userId])\n  @@index([status])\n  @@map(\"orders\")\n}\n\nmodel OrderItem {\n  id          String  @id @default(uuid())\n  orderId     String  @map(\"order_id\")\n  productId   String  @map(\"product_id\")\n  productName String  @map(\"product_name\")\n  unitPrice   Decimal @map(\"unit_price\") @db.Decimal(12, 2)\n  quantity    Int\n  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)\n\n  @@index([orderId])\n  @@map(\"order_items\")\n}\n\nmodel ProductSnapshot {\n  productId String   @id @map(\"product_id\")\n  name      String\n  price     Decimal  @db.Decimal(12, 2)\n  currency  String   @default(\"USD\")\n  stockView Int      @default(0) @map(\"stock_view\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"product_snapshots\")\n}\n\nmodel IdempotencyKey {\n  key       String   @id\n  orderId   String   @unique @map(\"order_id\")\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  order     Order    @relation(fields: [orderId], references: [id])\n\n  @@map(\"idempotency_keys\")\n}\n\nmodel ProcessedEvent {\n  eventId     String   @id @map(\"event_id\")\n  processedAt DateTime @default(now()) @map(\"processed_at\")\n\n  @@map(\"processed_events\")\n}\n\nmodel Outbox {\n  id         String    @id @default(uuid())\n  routingKey String    @map(\"routing_key\")\n  payload    Json\n  sent       Boolean   @default(false)\n  createdAt  DateTime  @default(now()) @map(\"created_at\")\n  sentAt     DateTime? @map(\"sent_at\")\n\n  @@index([sent, createdAt])\n  @@map(\"outbox\")\n}\n",
-  "inlineSchemaHash": "f5ed999df217004d7058c7d11086d898b7d28f40f04b528792c9191049bdebe4",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/prisma\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\", \"linux-musl\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Order {\n  id             String          @id @default(uuid())\n  userId         String          @map(\"user_id\")\n  status         String          @default(\"PENDING_PAYMENT\")\n  totalAmount    Decimal         @map(\"total_amount\") @db.Decimal(12, 2)\n  currency       String          @default(\"USD\")\n  createdAt      DateTime        @default(now()) @map(\"created_at\")\n  updatedAt      DateTime        @updatedAt @map(\"updated_at\")\n  items          OrderItem[]\n  idempotencyKey IdempotencyKey?\n\n  @@index([userId])\n  @@index([status])\n  @@map(\"orders\")\n}\n\nmodel OrderItem {\n  id          String  @id @default(uuid())\n  orderId     String  @map(\"order_id\")\n  productId   String  @map(\"product_id\")\n  productName String  @map(\"product_name\")\n  unitPrice   Decimal @map(\"unit_price\") @db.Decimal(12, 2)\n  quantity    Int\n  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)\n\n  @@index([orderId])\n  @@map(\"order_items\")\n}\n\nmodel ProductSnapshot {\n  productId String   @id @map(\"product_id\")\n  name      String\n  price     Decimal  @db.Decimal(12, 2)\n  currency  String   @default(\"USD\")\n  stockView Int      @default(0) @map(\"stock_view\")\n  updatedAt DateTime @updatedAt @map(\"updated_at\")\n\n  @@map(\"product_snapshots\")\n}\n\nmodel IdempotencyKey {\n  key       String   @id\n  orderId   String   @unique @map(\"order_id\")\n  createdAt DateTime @default(now()) @map(\"created_at\")\n  order     Order    @relation(fields: [orderId], references: [id])\n\n  @@map(\"idempotency_keys\")\n}\n\nmodel ProcessedEvent {\n  eventId     String   @id @map(\"event_id\")\n  processedAt DateTime @default(now()) @map(\"processed_at\")\n\n  @@map(\"processed_events\")\n}\n\nmodel Outbox {\n  id         String    @id @default(uuid())\n  routingKey String    @map(\"routing_key\")\n  payload    Json\n  sent       Boolean   @default(false)\n  createdAt  DateTime  @default(now()) @map(\"created_at\")\n  sentAt     DateTime? @map(\"sent_at\")\n\n  @@index([sent, createdAt])\n  @@map(\"outbox\")\n}\n",
+  "inlineSchemaHash": "9e83648198f662a5c996f993ed627ac9a7f07a50a0497c500847fb8c1c7624a7",
   "copyEngine": true
 }
 
@@ -233,8 +239,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "apps/orders-service/src/generated/prisma",
-    "orders-service/src/generated/prisma",
+    "src/generated/prisma",
+    "generated/prisma",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -263,11 +269,15 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
-path.join(process.cwd(), "apps/orders-service/src/generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node")
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node")
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-linux-musl-openssl-3.0.x.so.node");
-path.join(process.cwd(), "apps/orders-service/src/generated/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node")
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-linux-musl.so.node");
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-linux-musl.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "apps/orders-service/src/generated/prisma/schema.prisma")
+path.join(process.cwd(), "src/generated/prisma/schema.prisma")

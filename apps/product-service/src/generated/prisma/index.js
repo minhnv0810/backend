@@ -196,6 +196,10 @@ const config = {
       {
         "fromEnvVar": null,
         "value": "linux-musl-openssl-3.0.x"
+      },
+      {
+        "fromEnvVar": null,
+        "value": "linux-musl"
       }
     ],
     "previewFeatures": [],
@@ -203,7 +207,8 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null
+    "rootEnvPath": null,
+    "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
   "clientVersion": "5.22.0",
@@ -212,6 +217,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
@@ -220,8 +226,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/prisma\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Product {\n  id          String            @id @default(uuid())\n  sku         String            @unique\n  name        String\n  description String?\n  price       Decimal           @db.Decimal(12, 2)\n  currency    String            @default(\"USD\")\n  status      String            @default(\"active\")\n  createdAt   DateTime          @default(now()) @map(\"created_at\")\n  updatedAt   DateTime          @updatedAt @map(\"updated_at\")\n  categories  ProductCategory[]\n  stock       Stock?\n\n  @@index([status])\n  @@map(\"products\")\n}\n\nmodel Category {\n  id       String            @id @default(uuid())\n  name     String\n  slug     String            @unique\n  parentId String?           @map(\"parent_id\")\n  parent   Category?         @relation(\"CategoryTree\", fields: [parentId], references: [id])\n  children Category[]        @relation(\"CategoryTree\")\n  products ProductCategory[]\n\n  @@map(\"categories\")\n}\n\nmodel ProductCategory {\n  productId  String   @map(\"product_id\")\n  categoryId String   @map(\"category_id\")\n  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)\n  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)\n\n  @@id([productId, categoryId])\n  @@map(\"product_categories\")\n}\n\nmodel Stock {\n  productId         String   @id @map(\"product_id\")\n  quantityAvailable Int      @default(0) @map(\"quantity_available\")\n  quantityReserved  Int      @default(0) @map(\"quantity_reserved\")\n  updatedAt         DateTime @updatedAt @map(\"updated_at\")\n  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)\n\n  @@map(\"stock\")\n}\n\nmodel ProcessedEvent {\n  eventId     String   @id @map(\"event_id\")\n  processedAt DateTime @default(now()) @map(\"processed_at\")\n\n  @@map(\"processed_events\")\n}\n\nmodel Outbox {\n  id         String    @id @default(uuid())\n  routingKey String    @map(\"routing_key\")\n  payload    Json\n  sent       Boolean   @default(false)\n  createdAt  DateTime  @default(now()) @map(\"created_at\")\n  sentAt     DateTime? @map(\"sent_at\")\n\n  @@index([sent, createdAt])\n  @@map(\"outbox\")\n}\n",
-  "inlineSchemaHash": "bb5ce7765a6c974c45d55326f50691dbcdac3867bc3b7b520473929f39d7d101",
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  output        = \"../src/generated/prisma\"\n  binaryTargets = [\"native\", \"linux-musl-openssl-3.0.x\", \"linux-musl\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel Product {\n  id          String            @id @default(uuid())\n  sku         String            @unique\n  name        String\n  description String?\n  price       Decimal           @db.Decimal(12, 2)\n  currency    String            @default(\"USD\")\n  status      String            @default(\"active\")\n  createdAt   DateTime          @default(now()) @map(\"created_at\")\n  updatedAt   DateTime          @updatedAt @map(\"updated_at\")\n  categories  ProductCategory[]\n  stock       Stock?\n\n  @@index([status])\n  @@map(\"products\")\n}\n\nmodel Category {\n  id       String            @id @default(uuid())\n  name     String\n  slug     String            @unique\n  parentId String?           @map(\"parent_id\")\n  parent   Category?         @relation(\"CategoryTree\", fields: [parentId], references: [id])\n  children Category[]        @relation(\"CategoryTree\")\n  products ProductCategory[]\n\n  @@map(\"categories\")\n}\n\nmodel ProductCategory {\n  productId  String   @map(\"product_id\")\n  categoryId String   @map(\"category_id\")\n  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)\n  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)\n\n  @@id([productId, categoryId])\n  @@map(\"product_categories\")\n}\n\nmodel Stock {\n  productId         String   @id @map(\"product_id\")\n  quantityAvailable Int      @default(0) @map(\"quantity_available\")\n  quantityReserved  Int      @default(0) @map(\"quantity_reserved\")\n  updatedAt         DateTime @updatedAt @map(\"updated_at\")\n  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)\n\n  @@map(\"stock\")\n}\n\nmodel ProcessedEvent {\n  eventId     String   @id @map(\"event_id\")\n  processedAt DateTime @default(now()) @map(\"processed_at\")\n\n  @@map(\"processed_events\")\n}\n\nmodel Outbox {\n  id         String    @id @default(uuid())\n  routingKey String    @map(\"routing_key\")\n  payload    Json\n  sent       Boolean   @default(false)\n  createdAt  DateTime  @default(now()) @map(\"created_at\")\n  sentAt     DateTime? @map(\"sent_at\")\n\n  @@index([sent, createdAt])\n  @@map(\"outbox\")\n}\n",
+  "inlineSchemaHash": "d68e062eeec858724fe6f20d333484c4139a404543aa7816702be29175e29364",
   "copyEngine": true
 }
 
@@ -230,8 +236,8 @@ const fs = require('fs')
 config.dirname = __dirname
 if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
   const alternativePaths = [
-    "apps/product-service/src/generated/prisma",
-    "product-service/src/generated/prisma",
+    "src/generated/prisma",
+    "generated/prisma",
   ]
   
   const alternativePath = alternativePaths.find((altPath) => {
@@ -260,11 +266,15 @@ Object.assign(exports, Prisma)
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-debian-openssl-3.0.x.so.node");
-path.join(process.cwd(), "apps/product-service/src/generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node")
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-debian-openssl-3.0.x.so.node")
 
 // file annotations for bundling tools to include these files
 path.join(__dirname, "libquery_engine-linux-musl-openssl-3.0.x.so.node");
-path.join(process.cwd(), "apps/product-service/src/generated/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node")
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-linux-musl.so.node");
+path.join(process.cwd(), "src/generated/prisma/libquery_engine-linux-musl.so.node")
 // file annotations for bundling tools to include these files
 path.join(__dirname, "schema.prisma");
-path.join(process.cwd(), "apps/product-service/src/generated/prisma/schema.prisma")
+path.join(process.cwd(), "src/generated/prisma/schema.prisma")
