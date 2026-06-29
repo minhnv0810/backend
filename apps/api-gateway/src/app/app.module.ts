@@ -8,6 +8,7 @@ import { ObservabilityModule } from '@app/observability';
 import { GatewayJwtGuard } from '../auth/jwt.guard';
 import { HttpExceptionFilter } from '../common/filters/http-exception.filter';
 import { ProxyModule } from '../proxy/proxy.module';
+import { DocsModule } from '../docs/docs.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ProxyModule } from '../proxy/proxy.module';
       inject: [ConfigService],
     }),
     ProxyModule,
+    DocsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

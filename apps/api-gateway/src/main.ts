@@ -22,16 +22,10 @@ async function bootstrap() {
 
   const placeholderDoc = SwaggerModule.createDocument(
     app,
-    new DocumentBuilder().setTitle('API Gateway').setVersion('1.0').build(),
+    new DocumentBuilder().setTitle('Backend API').setVersion('1.0').build(),
   );
   SwaggerModule.setup('docs', app, placeholderDoc, {
-    swaggerOptions: {
-      urls: [
-        { url: '/auth/api-json', name: 'Auth Service' },
-        { url: '/products/api-json', name: 'Product Service' },
-        { url: '/orders/api-json', name: 'Orders Service' },
-      ],
-    },
+    swaggerOptions: { url: '/docs/json' },
   });
 
   const port = config.get<number>('PORT', 3000);

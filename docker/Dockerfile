@@ -10,9 +10,18 @@ FROM base AS build
 ARG SERVICE
 ENV CI=true
 COPY . .
+# Regenerate Prisma client inside Alpine so the linux-musl binary is produced
+RUN [ -d "apps/$SERVICE/prisma" ] && pnpm exec prisma generate --schema=apps/$SERVICE/prisma/schema.prisma || true
 RUN pnpm nx build $SERVICE --configuration=production
-# Copy prisma schema into dist so production stage can pick it up (no-op for services without prisma)
+# Copy prisma schema into dist
 RUN [ -d "apps/$SERVICE/prisma" ] && cp -r apps/$SERVICE/prisma dist/apps/$SERVICE/ || true
+# Copy engine binary to the path the bundled client resolves at runtime:
+#   process.cwd()/apps/<service>/src/generated/prisma/
+RUN if [ -d "apps/$SERVICE/src/generated/prisma" ]; then \
+  mkdir -p dist/apps/$SERVICE/apps/$SERVICE/src/generated/prisma && \
+  find apps/$SERVICE/src/generated/prisma -name "*.node" \
+    -exec cp {} dist/apps/$SERVICE/apps/$SERVICE/src/generated/prisma/ \; ; \
+fi
 
 # ── Production ────────────────────────────────────────────────────────
 FROM node:22-alpine AS production
