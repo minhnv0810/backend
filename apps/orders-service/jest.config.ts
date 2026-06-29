@@ -7,4 +7,5 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/orders-service',
+  setupFiles: ['<rootDir>/test/setup-env.ts'],
 };
