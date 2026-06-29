@@ -13,7 +13,7 @@ export class MessagingModule {
         RabbitPublisherService,
         { provide: EVENT_PUBLISHER, useExisting: RabbitPublisherService },
       ],
-      exports: [EVENT_PUBLISHER, RabbitPublisherService],
+      exports: [EVENT_PUBLISHER, RabbitPublisherService, MESSAGING_OPTIONS],
       global: true,
     };
   }
