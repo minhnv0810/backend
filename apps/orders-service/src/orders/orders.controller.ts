@@ -11,7 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiSecurity, ApiQuery } from '@nestjs/swagger';
 import { Request } from 'express';
 import { ForwardedIdentityGuard, CurrentUser, AuthenticatedUser } from '@app/auth';
 import { OrdersService } from './orders.service';
@@ -19,7 +19,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 
 @ApiTags('orders')
-@ApiBearerAuth()
+@ApiSecurity('x-user-id')
+@ApiSecurity('x-user-roles')
 @Controller('orders')
 @UseGuards(ForwardedIdentityGuard)
 export class OrdersController {

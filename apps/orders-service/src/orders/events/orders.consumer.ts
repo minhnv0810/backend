@@ -33,7 +33,13 @@ export class OrdersConsumer implements OnApplicationBootstrap, OnApplicationShut
     this.channel = this.connection.createChannel({
       json: true,
       setup: async (ch: ConfirmChannel) => {
-        await ch.assertQueue(Queue.OrdersProductSync, { durable: true });
+        await ch.assertQueue(Queue.OrdersProductSync, {
+          durable: true,
+          arguments: {
+            'x-dead-letter-exchange': `dlx.${Queue.OrdersProductSync}`,
+            'x-dead-letter-routing-key': Queue.OrdersProductSync,
+          },
+        });
         await ch.prefetch(10);
         await ch.consume(Queue.OrdersProductSync, (msg) => this.handleMessage(ch, msg));
         this.logger.log(`Listening on queue: ${Queue.OrdersProductSync}`);

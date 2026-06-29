@@ -9,16 +9,14 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiSecurity, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UpdateRolesDto } from './dto/update-roles.dto';
-import { RolesGuard, Roles, CurrentUser } from '@app/auth';
-import { AuthenticatedUser } from '@app/auth';
-import { JwtGuard } from './guards/jwt.guard';
+import { ForwardedIdentityGuard, RolesGuard, Roles, CurrentUser, AuthenticatedUser } from '@app/auth';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -58,17 +56,19 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(JwtGuard)
+  @UseGuards(ForwardedIdentityGuard)
   @ApiOperation({ summary: 'Logout (revoke refresh token)' })
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   async logout(@Body() dto: RefreshDto) {
     await this.authService.logout(dto.refreshToken);
   }
 
   @Get('me')
-  @UseGuards(JwtGuard)
+  @UseGuards(ForwardedIdentityGuard)
   @ApiOperation({ summary: 'Get authenticated user' })
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   async me(@CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     const correlationId = req.headers['x-correlation-id'] as string ?? '';
     const data = await this.authService.getMe(user.userId);
@@ -76,10 +76,11 @@ export class AuthController {
   }
 
   @Post('users/:id/roles')
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Assign roles to user (admin)' })
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   async updateRoles(
     @Param('id') id: string,
     @Body() dto: UpdateRolesDto,

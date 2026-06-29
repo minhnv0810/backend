@@ -11,13 +11,12 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiSecurity } from '@nestjs/swagger';
 import { Request } from 'express';
-import { RolesGuard, Roles } from '@app/auth';
+import { ForwardedIdentityGuard, RolesGuard, Roles } from '@app/auth';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { JwtGuard } from '../product/guards/jwt.guard';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -33,9 +32,10 @@ export class CategoryController {
   }
 
   @Post()
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @ApiOperation({ summary: 'Create category (admin)' })
   async createCategory(@Body() dto: CreateCategoryDto, @Req() req: Request) {
     const correlationId = (req.headers['x-correlation-id'] as string) ?? '';
@@ -44,9 +44,10 @@ export class CategoryController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @ApiOperation({ summary: 'Update category (admin)' })
   async updateCategory(
     @Param('id') id: string,
@@ -59,9 +60,10 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete category (admin)' })
   async deleteCategory(@Param('id') id: string) {

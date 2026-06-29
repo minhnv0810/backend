@@ -11,16 +11,15 @@ import {
   HttpStatus,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiSecurity } from '@nestjs/swagger';
 import { Request } from 'express';
-import { RolesGuard, Roles } from '@app/auth';
+import { ForwardedIdentityGuard, RolesGuard, Roles } from '@app/auth';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ListProductsDto } from './dto/list-products.dto';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
-import { JwtGuard } from './guards/jwt.guard';
 
 @ApiTags('products')
 @Controller('products')
@@ -53,9 +52,10 @@ export class ProductController {
   }
 
   @Post()
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @ApiOperation({ summary: 'Create product (admin)' })
   async createProduct(@Body() dto: CreateProductDto, @Req() req: Request) {
     const correlationId = (req.headers['x-correlation-id'] as string) ?? '';
@@ -64,9 +64,10 @@ export class ProductController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @ApiOperation({ summary: 'Update product (admin)' })
   async updateProduct(
     @Param('id') id: string,
@@ -79,9 +80,10 @@ export class ProductController {
   }
 
   @Post(':id/stock')
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(ForwardedIdentityGuard, RolesGuard)
   @Roles('admin')
-  @ApiBearerAuth()
+  @ApiSecurity('x-user-id')
+  @ApiSecurity('x-user-roles')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Adjust product stock (admin)' })
   async adjustStock(

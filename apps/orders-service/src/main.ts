@@ -16,7 +16,8 @@ async function bootstrap() {
     const config = new DocumentBuilder()
       .setTitle('orders-service')
       .setVersion('1.0')
-      .addBearerAuth()
+      .addApiKey({ type: 'apiKey', in: 'header', name: 'x-user-id' }, 'x-user-id')
+      .addApiKey({ type: 'apiKey', in: 'header', name: 'x-user-roles' }, 'x-user-roles')
       .build();
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
   }
