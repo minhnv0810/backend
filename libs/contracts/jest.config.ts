@@ -8,4 +8,10 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/libs/contracts',
   passWithNoTests: true,
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/index.ts',
+    '!src/**/*.module.ts',
+    '!src/**/*.spec.ts',
+  ],
 };

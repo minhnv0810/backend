@@ -16,8 +16,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { UpdateRolesDto } from './dto/update-roles.dto';
-import { ForwardedIdentityGuard, RolesGuard, Roles, CurrentUser } from '@app/auth';
+import { RolesGuard, Roles, CurrentUser } from '@app/auth';
 import { AuthenticatedUser } from '@app/auth';
+import { JwtGuard } from './guards/jwt.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -57,7 +58,7 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(ForwardedIdentityGuard)
+  @UseGuards(JwtGuard)
   @ApiOperation({ summary: 'Logout (revoke refresh token)' })
   @ApiBearerAuth()
   async logout(@Body() dto: RefreshDto) {
@@ -65,7 +66,7 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(ForwardedIdentityGuard)
+  @UseGuards(JwtGuard)
   @ApiOperation({ summary: 'Get authenticated user' })
   @ApiBearerAuth()
   async me(@CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
@@ -75,7 +76,7 @@ export class AuthController {
   }
 
   @Post('users/:id/roles')
-  @UseGuards(ForwardedIdentityGuard, RolesGuard)
+  @UseGuards(JwtGuard, RolesGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Assign roles to user (admin)' })
   @ApiBearerAuth()

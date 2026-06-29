@@ -8,7 +8,7 @@ import {
 import * as argon2 from 'argon2';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaService } from '../prisma/prisma.service';
+import { AuthRepository } from './auth.repository';
 import { AuthJwtService } from '../jwt/jwt.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -21,46 +21,35 @@ const LOCK_DURATION_MS = 15 * 60 * 1000;
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly repo: AuthRepository,
     private readonly jwtService: AuthJwtService,
   ) {}
 
   async register(dto: RegisterDto, correlationId: string) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-    });
+    const existing = await this.repo.findUserByEmail(dto.email.toLowerCase());
     if (existing) {
       throw new ConflictException({ code: 'EMAIL_ALREADY_EXISTS', message: 'Email already in use' });
     }
 
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
-    const customerRole = await this.prisma.role.findUniqueOrThrow({ where: { name: 'customer' } });
+    const customerRole = await this.repo.findRoleByName('customer');
 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const u = await tx.user.create({
-        data: {
+    const user = await this.repo.createUserWithCredentialAndRole(
+      dto.email.toLowerCase(),
+      dto.displayName,
+      passwordHash,
+      customerRole.id,
+      {
+        routingKey: RoutingKey.UserRegistered,
+        payload: {
+          eventId: uuidv4(),
+          version: 1,
+          occurredAt: new Date().toISOString(),
           email: dto.email.toLowerCase(),
           displayName: dto.displayName,
-          credential: { create: { passwordHash } },
-          roles: { create: { roleId: customerRole.id } },
         },
-        include: { roles: { include: { role: true } } },
-      });
-      await tx.outbox.create({
-        data: {
-          routingKey: RoutingKey.UserRegistered,
-          payload: {
-            eventId: uuidv4(),
-            version: 1,
-            occurredAt: new Date().toISOString(),
-            userId: u.id,
-            email: u.email,
-            displayName: u.displayName,
-          },
-        },
-      });
-      return u;
-    });
+      },
+    );
 
     return {
       userId: user.id,
@@ -71,10 +60,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, userAgent: string | undefined, ip: string | undefined) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
-      include: { credential: true, roles: { include: { role: true } } },
-    });
+    const user = await this.repo.findUserByEmail(dto.email.toLowerCase());
 
     if (!user || !user.credential) {
       throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
@@ -93,37 +79,24 @@ export class AuthService {
     if (!valid) {
       const attempts = cred.failedAttempts + 1;
       const lockedUntil = attempts >= MAX_FAILED_ATTEMPTS ? new Date(Date.now() + LOCK_DURATION_MS) : null;
-      await this.prisma.credential.update({
-        where: { userId: user.id },
-        data: { failedAttempts: attempts, lockedUntil },
-      });
+      await this.repo.incrementFailedAttempts(user.id, attempts, lockedUntil);
       throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
-    await this.prisma.credential.update({
-      where: { userId: user.id },
-      data: { failedAttempts: 0, lockedUntil: null },
-    });
+    await this.repo.resetFailedAttempts(user.id);
 
     const roles = user.roles.map((r) => r.role.name);
     const familyId = uuidv4();
     const tokens = await this.issueTokenPair(user.id, user.email, roles, familyId);
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.outbox.create({
-        data: {
-          routingKey: RoutingKey.UserLoggedIn,
-          payload: {
-            eventId: uuidv4(),
-            version: 1,
-            occurredAt: new Date().toISOString(),
-            userId: user.id,
-            at: new Date().toISOString(),
-            userAgent,
-            ip,
-          },
-        },
-      });
+    await this.repo.writeOutbox(RoutingKey.UserLoggedIn, {
+      eventId: uuidv4(),
+      version: 1,
+      occurredAt: new Date().toISOString(),
+      userId: user.id,
+      at: new Date().toISOString(),
+      userAgent,
+      ip,
     });
 
     return tokens;
@@ -138,24 +111,18 @@ export class AuthService {
     }
 
     const tokenHash = this.hashToken(dto.refreshToken);
-    const stored = await this.prisma.refreshToken.findFirst({
-      where: { tokenHash, familyId: payload.familyId },
-      include: { user: { include: { roles: { include: { role: true } } } } },
-    });
+    const stored = await this.repo.findRefreshToken(tokenHash, payload.familyId);
 
     if (!stored) {
       throw new UnauthorizedException({ code: 'INVALID_REFRESH_TOKEN', message: 'Refresh token not found' });
     }
 
     if (stored.revoked) {
-      await this.prisma.refreshToken.updateMany({
-        where: { familyId: payload.familyId },
-        data: { revoked: true },
-      });
+      await this.repo.revokeRefreshTokenFamily(payload.familyId);
       throw new UnauthorizedException({ code: 'INVALID_REFRESH_TOKEN', message: 'Refresh token reuse detected' });
     }
 
-    await this.prisma.refreshToken.update({ where: { id: stored.id }, data: { revoked: true } });
+    await this.repo.revokeRefreshToken(stored.id);
 
     const roles = stored.user.roles.map((r) => r.role.name);
     return this.issueTokenPair(stored.user.id, stored.user.email, roles, payload.familyId);
@@ -163,14 +130,11 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     const tokenHash = this.hashToken(refreshToken);
-    await this.prisma.refreshToken.updateMany({ where: { tokenHash }, data: { revoked: true } });
+    await this.repo.revokeRefreshTokenByHash(tokenHash);
   }
 
   async getMe(userId: string) {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      include: { roles: { include: { role: true } } },
-    });
+    const user = await this.repo.findUserById(userId);
     return {
       userId: user.id,
       email: user.email,
@@ -180,17 +144,11 @@ export class AuthService {
   }
 
   async updateRoles(targetUserId: string, roles: string[]) {
-    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
-    if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User not found' });
+    const exists = await this.repo.findUserById(targetUserId).catch(() => null);
+    if (!exists) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User not found' });
 
-    const roleRecords = await this.prisma.role.findMany({ where: { name: { in: roles } } });
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.userRole.deleteMany({ where: { userId: targetUserId } });
-      await tx.userRole.createMany({
-        data: roleRecords.map((r) => ({ userId: targetUserId, roleId: r.id })),
-      });
-    });
+    const roleRecords = await this.repo.findRolesByNames(roles);
+    await this.repo.replaceUserRoles(targetUserId, roleRecords.map((r) => r.id));
 
     return { userId: targetUserId, roles };
   }
@@ -200,14 +158,12 @@ export class AuthService {
     const refreshToken = this.jwtService.signRefresh({ sub: userId, familyId });
     const tokenHash = this.hashToken(refreshToken);
 
-    await this.prisma.refreshToken.create({
-      data: {
-        userId,
-        tokenHash,
-        familyId,
-        expiresAt: new Date(Date.now() + this.jwtService.getRefreshTtlMs()),
-      },
-    });
+    await this.repo.createRefreshToken(
+      userId,
+      tokenHash,
+      familyId,
+      new Date(Date.now() + this.jwtService.getRefreshTtlMs()),
+    );
 
     return { accessToken, refreshToken, expiresIn: this.jwtService.getAccessTtl() };
   }
