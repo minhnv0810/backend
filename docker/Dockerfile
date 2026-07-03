@@ -1,5 +1,6 @@
 # ── Base ──────────────────────────────────────────────────────────────
 FROM node:22-alpine AS base
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@11.1.3 --activate
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -25,6 +26,7 @@ fi
 
 # ── Production ────────────────────────────────────────────────────────
 FROM node:22-alpine AS production
+RUN apk add --no-cache openssl
 ARG SERVICE
 WORKDIR /app
 COPY --from=build /app/dist/apps/$SERVICE ./

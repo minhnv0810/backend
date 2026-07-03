@@ -56,7 +56,7 @@ export class ProxyController {
     return this.proxy.forward(req, res, 'auth');
   }
 
-  @All('auth/*path')
+  @All('auth/*')
   @SkipThrottle({ global: true })
   @Throttle({ auth: {} })
   authRoutes(@Req() req: Request, @Res() res: Response) {
@@ -101,7 +101,7 @@ export class ProxyController {
     return this.proxy.forward(req, res, 'product');
   }
 
-  @All('products/*path')
+  @All('products/*')
   productRoutes(@Req() req: Request, @Res() res: Response) {
     return this.proxy.forward(req, res, 'product');
   }
@@ -113,7 +113,7 @@ export class ProxyController {
     return this.proxy.forward(req, res, 'orders');
   }
 
-  @All('orders/*path')
+  @All('orders/*')
   orderRoutes(@Req() req: Request, @Res() res: Response) {
     return this.proxy.forward(req, res, 'orders');
   }

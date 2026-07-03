@@ -20,12 +20,27 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  const placeholderDoc = SwaggerModule.createDocument(
+  // SwaggerModule.setup must run before app.init() to register static asset routes.
+  // We pass a minimal placeholder so NestJS registers /docs assets, then override
+  // window.onload via customJsStr to load the real merged spec from /docs/json
+  // (served by DocsController after DocsService.onModuleInit fetches all upstreams)
+  const placeholder = SwaggerModule.createDocument(
     app,
     new DocumentBuilder().setTitle('Backend API').setVersion('1.0').build(),
   );
-  SwaggerModule.setup('docs', app, placeholderDoc, {
-    swaggerOptions: { url: '/docs/json' },
+  SwaggerModule.setup('docs', app, placeholder, {
+    customJsStr: `
+      window.onload = function() {
+        SwaggerUIBundle({
+          url: '/docs/json',
+          dom_id: '#swagger-ui',
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          layout: 'StandaloneLayout',
+          persistAuthorization: true,
+          deepLinking: true,
+        });
+      };
+    `,
   });
 
   const port = config.get<number>('PORT', 3000);

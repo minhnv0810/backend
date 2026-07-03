@@ -16,6 +16,9 @@ export class AuthJwtService {
   private readonly audience: string;
   private readonly issuer: string;
 
+  private readonly privateKey: string;
+  private readonly publicKey: string;
+
   constructor(
     private readonly jwt: NestJwtService,
     private readonly config: ConfigService,
@@ -24,13 +27,15 @@ export class AuthJwtService {
     this.refreshTtl = this.config.get<number>('JWT_REFRESH_TOKEN_TTL', 604800);
     this.audience = this.config.get<string>('JWT_AUDIENCE', 'ecommerce-api');
     this.issuer = this.config.get<string>('JWT_ISSUER', 'auth-service');
+    this.privateKey = this.config.getOrThrow<string>('JWT_PRIVATE_KEY').replace(/\\n/g, '\n');
+    this.publicKey = this.config.getOrThrow<string>('JWT_PUBLIC_KEY').replace(/\\n/g, '\n');
   }
 
   signAccess(payload: { sub: string; email: string; roles: string[] }): string {
     return this.jwt.sign(
       { ...payload, jti: uuidv4() },
       {
-        privateKey: this.config.get<string>('JWT_PRIVATE_KEY'),
+        privateKey: this.privateKey,
         algorithm: 'RS256',
         expiresIn: this.accessTtl,
         audience: this.audience,
@@ -43,7 +48,7 @@ export class AuthJwtService {
     return this.jwt.sign(
       { ...payload, jti: uuidv4() },
       {
-        privateKey: this.config.get<string>('JWT_PRIVATE_KEY'),
+        privateKey: this.privateKey,
         algorithm: 'RS256',
         expiresIn: this.refreshTtl,
         audience: this.audience,
@@ -54,7 +59,7 @@ export class AuthJwtService {
 
   verify<T extends object>(token: string): T {
     return this.jwt.verify<T>(token, {
-      publicKey: this.config.get<string>('JWT_PUBLIC_KEY'),
+      publicKey: this.publicKey,
       algorithms: ['RS256'],
       audience: this.audience,
       issuer: this.issuer,
