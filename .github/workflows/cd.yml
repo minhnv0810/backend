@@ -1,0 +1,86 @@
+name: CD
+
+# Runs only after the CI workflow finished successfully on main/master — never
+# builds/publishes an image from code that hasn't passed lint/typecheck/test/build.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main, master]
+
+env:
+  GITOPS_REPO: minhnv0810/backend-gitops
+
+jobs:
+  build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api-gateway, auth-service, product-service, orders-service]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set short sha
+        id: vars
+        run: echo "sha_short=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          build-args: SERVICE=${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:sha-${{ steps.vars.outputs.sha_short }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+
+  update-gitops:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set short sha
+        id: vars
+        run: echo "sha_short=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Checkout gitops repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPO }}
+          token: ${{ secrets.GITOPS_REPO_TOKEN }}
+          path: gitops
+
+      - name: Install yq
+        run: |
+          curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      - name: Bump image tags
+        run: |
+          cd gitops
+          for svc in api-gateway auth-service product-service orders-service; do
+            yq -i ".image.tag = \"sha-${{ steps.vars.outputs.sha_short }}\"" charts/$svc/values.yaml
+          done
+
+      - name: Commit and push
+        run: |
+          cd gitops
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/*/values.yaml
+          git diff --cached --quiet && echo "No image tag changes" && exit 0
+          git commit -m "chore: bump image tags to sha-${{ steps.vars.outputs.sha_short }}"
+          git push
